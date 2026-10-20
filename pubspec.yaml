@@ -19,6 +19,7 @@ dependencies:
   http: ^1.1.0
   google_fonts: ^6.1.0
   equatable: ^2.0.5
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +30,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/models/
     - assets/data/elements.json
     - assets/data/

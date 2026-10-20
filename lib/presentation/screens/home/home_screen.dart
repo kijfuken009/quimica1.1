@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../periodic_table/table_screen.dart';
 import '../ai_chat/chat_screen.dart';
 import '../games/games_menu_screen.dart';
+import '../reactions/reactions_screen.dart';
 import '../settings/settings_screens.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -18,6 +19,7 @@ class HomeScreen extends StatelessWidget {
         mainAxisSpacing: 20,
         children: [
           _menuItem(context, "Tabla Periódica", Icons.grid_view, Colors.blue, const TableScreen()),
+          _menuItem(context, "Reacciones", Icons.science, Colors.teal, const ReactionsScreen()),
           _menuItem(context, "IA Tutor", Icons.psychology, Colors.purple, const ChatScreen()),
           _menuItem(context, "Mini Juegos", Icons.gamepad, Colors.orange, const GamesMenuScreen()),
           _menuItem(context, "Ajustes", Icons.settings, Colors.grey, const SettingsScreen()),

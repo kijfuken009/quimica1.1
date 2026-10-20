@@ -5,10 +5,14 @@ import 'providers/user_provider.dart';
 import 'providers/theme_provider.dart';
 import 'presentation/screens/auth/onboarding_screen.dart';
 import 'presentation/screens/home/home_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   // Importante para inicializar bindings antes de runApp
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Carga las variables de entorno desde el archivo .env
+  await dotenv.load(fileName: ".env");
 
   runApp(
     MultiProvider(

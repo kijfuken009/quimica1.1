@@ -54,3 +54,6 @@ app.*.map.json
 assets/models/
 assets/models/*.glb
 assets/models/*.gltf
+
+# Archivo de variables de entorno y claves secretas
+.env
