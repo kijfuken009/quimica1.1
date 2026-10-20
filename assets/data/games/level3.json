@@ -1,0 +1,22 @@
+[
+  {"question": "¿Cuál es el símbolo químico del Helio?", "answer": "He"},
+  {"question": "¿Cuál es el gas noble usado comúnmente en letreros luminosos?", "answer": "Neon"},
+  {"question": "¿Cuál es el símbolo químico del Argón?", "answer": "Ar"},
+  {"question": "¿Cuál es el símbolo químico del Azufre?", "answer": "S"},
+  {"question": "¿Cuál es el símbolo químico del Fósforo?", "answer": "P"},
+  {"question": "¿Cuál es el símbolo químico del Kriptón?", "answer": "Kr"},
+  {"question": "¿Cuál es el símbolo químico del Xenón?", "answer": "Xe"},
+  {"question": "¿Cuál es el gas noble radiactivo más pesado?", "answer": "Radon"},
+  {"question": "¿Los gases nobles reaccionan con facilidad? (Si o No)", "answer": "No"},
+  {"question": "¿Cuál es el símbolo químico del Flúor?", "answer": "F"},
+  {"question": "¿Cuál es el símbolo químico del Bromo?", "answer": "Br"},
+  {"question": "¿Cuál es el único no metal que es líquido a temperatura ambiente?", "answer": "Bromo"},
+  {"question": "¿Cuál es el no metal esencial para la respiración de los seres vivos?", "answer": "Oxigeno"},
+  {"question": "¿Cuál es el gas noble con el que se inflan globos que flotan?", "answer": "Helio"},
+  {"question": "¿Cuál es el símbolo químico del Yodo?", "answer": "I"},
+  {"question": "¿En qué grupo de la tabla periódica están los gases nobles? (17 o 18)", "answer": "18"},
+  {"question": "¿A qué familia pertenecen el Flúor, Cloro y Bromo? (Halógenos o Alcalinos)", "answer": "Halogenos"},
+  {"question": "¿Cuál es el gas más abundante en la atmósfera terrestre?", "answer": "Nitrogeno"},
+  {"question": "¿Cuál es el símbolo del elemento que forma el diamante y el grafito?", "answer": "C"},
+  {"question": "¿El Cloro es un gas tóxico de color verdoso? (Si o No)", "answer": "Si"}
+]

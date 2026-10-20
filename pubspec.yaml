@@ -31,3 +31,5 @@ flutter:
   assets:
     - assets/models/
     - assets/data/elements.json
+    - assets/data/
+    - assets/data/games/

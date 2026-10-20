@@ -1,0 +1,22 @@
+[
+  {"question": "¿Cuál es el símbolo químico del Litio?", "answer": "Li"},
+  {"question": "¿Cuál es el símbolo químico del Potasio?", "answer": "K"},
+  {"question": "¿Cuál es el símbolo químico del Magnesio?", "answer": "Mg"},
+  {"question": "¿Cuál es el símbolo químico del Bario?", "answer": "Ba"},
+  {"question": "¿A qué grupo pertenecen el Sodio y el Potasio? (Alcalinos o Halógenos)", "answer": "Alcalinos"},
+  {"question": "¿Cuál es el metal alcalino más liviano?", "answer": "Litio"},
+  {"question": "¿Cuál es el símbolo químico del Cesio?", "answer": "Cs"},
+  {"question": "¿Cuál es el símbolo químico del Berilio?", "answer": "Be"},
+  {"question": "¿Cuál es el metal alcalinotérreo presente en huesos y dientes?", "answer": "Calcio"},
+  {"question": "¿El Francio es radiactivo? (Si o No)", "answer": "Si"},
+  {"question": "¿Cuál es el símbolo químico del Estroncio?", "answer": "Sr"},
+  {"question": "¿Cuál es el símbolo químico del Radio?", "answer": "Ra"},
+  {"question": "¿A qué grupo pertenecen el Calcio y el Magnesio? (Alcalinotérreos o Gases Nobles)", "answer": "Alcalinoterreos"},
+  {"question": "¿Los metales alcalinos reaccionan violentamente con el agua? (Si o No)", "answer": "Si"},
+  {"question": "¿Cuál es el símbolo químico del Rubidio?", "answer": "Rb"},
+  {"question": "¿En qué columna o grupo se encuentran los metales alcalinos? (1 o 2)", "answer": "1"},
+  {"question": "¿En qué columna o grupo se encuentran los metales alcalinotérreos? (1 o 2)", "answer": "2"},
+  {"question": "¿Qué metal alcalinotérreo arde con una llama blanca brillante?", "answer": "Magnesio"},
+  {"question": "¿Cuál es el metal alcalino abundante en la sal de mesa?", "answer": "Sodio"},
+  {"question": "¿El Bario produce un color verde en los fuegos artificiales? (Si o No)", "answer": "Si"}
+]

@@ -1,0 +1,22 @@
+[
+  {"question": "¿Cuál es el elemento con número atómico 1?", "answer": "Hidrogeno"},
+  {"question": "¿Cuál es el elemento con número atómico 6?", "answer": "Carbono"},
+  {"question": "¿Cuál es el elemento con número atómico 8?", "answer": "Oxigeno"},
+  {"question": "¿Cuál es el símbolo químico del Mercurio?", "answer": "Hg"},
+  {"question": "¿Cuál es el único metal líquido a temperatura ambiente?", "answer": "Mercurio"},
+  {"question": "¿Cuál es el símbolo químico del Uranio?", "answer": "U"},
+  {"question": "¿Cuál es el símbolo químico del Estaño?", "answer": "Sn"},
+  {"question": "¿Cuál es el símbolo químico del Titanio?", "answer": "Ti"},
+  {"question": "¿Cuál es el símbolo químico del Platino?", "answer": "Pt"},
+  {"question": "¿Cuál es el símbolo químico del Níquel?", "answer": "Ni"},
+  {"question": "¿Qué científico ruso ordenó la primera tabla periódica moderna? (Mendeleyev o Dalton)", "answer": "Mendeleyev"},
+  {"question": "¿Cuál es el símbolo químico del Wolframio (Tungsteno)?", "answer": "W"},
+  {"question": "¿Cuál es la partícula con carga positiva en el átomo?", "answer": "Proton"},
+  {"question": "¿Cuál es la partícula sin carga eléctrica en el núcleo del átomo?", "answer": "Neutron"},
+  {"question": "¿Cuál es la partícula con carga negativa que orbita el núcleo?", "answer": "Electron"},
+  {"question": "¿Cuál es el número atómico del Helio?", "answer": "2"},
+  {"question": "¿Cuál es el símbolo químico del Cobalto?", "answer": "Co"},
+  {"question": "¿Cuál es el símbolo químico del Manganeso?", "answer": "Mn"},
+  {"question": "¿Cuál es el metal más denso y pesado de la tabla periódica?", "answer": "Osmio"},
+  {"question": "¿Cuál es el símbolo químico del Bismuto?", "answer": "Bi"}
+]
