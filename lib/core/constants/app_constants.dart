@@ -1,25 +1,31 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
-  // Configuración de la API de Gemini
+  // Configuración de la API de Gemini (protegida con .env)
   static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
   
-  // Modelo actualizado según lo requerido por el endpoint
+  // Modelo oficial vigente
   static const String geminiModel = "gemini-3.8-flash";
   
   static const String geminiBaseUrl =
       "https://generativelanguage.googleapis.com/v1beta/models/$geminiModel:generateContent";
 
-  // Colores de categorías para la tabla periódica (Uso global)
-  static const Map<String, String> categoryToColor = {
-    "alkali": "Colors.red",
-    "alkaline": "Colors.orange",
-    "transition": "Colors.yellow",
-    "post-transition": "Colors.green",
-    "metalloid": "Colors.teal",
-    "non-metal": "Colors.blue",
-    "noble": "Colors.purple",
-    "lanthanide": "Colors.pink",
-    "actinide": "Colors.deepOrange",
+  // Colores de categorías para la tabla periódica (Tipados como Color)
+  static const Map<String, Color> categoryToColor = {
+    "alkali": Colors.redAccent,
+    "alkaline": Colors.orangeAccent,
+    "transition": Colors.amber,
+    "post-transition": Colors.lightGreen,
+    "metalloid": Colors.tealAccent,
+    "non-metal": Colors.lightBlueAccent,
+    "noble": Colors.purpleAccent,
+    "lanthanide": Colors.pinkAccent,
+    "actinide": Colors.deepOrangeAccent,
   };
+
+  /// Método utilitario para obtener el color de una categoría de forma segura
+  static Color getCategoryColor(String category) {
+    return categoryToColor[category.toLowerCase()] ?? Colors.cyanAccent;
+  }
 }
