@@ -1,12 +1,11 @@
-/// [UserModel] representa la información del estudiante.
-/// Implementamos métodos de serialización para permitir la persistencia
-/// de datos en el dispositivo mediante SharedPreferences.
 class UserModel {
   final String name;
   final int age;
-  final int chemistryLevel; // 1: Principiante, 2: Intermedio, 3: Avanzado
+  final int chemistryLevel;
   final int totalPoints;
   final int unlockedLevel;
+  final Map<int, int> classScores;
+  final List<dynamic> surpriseExams;
 
   UserModel({
     required this.name,
@@ -14,9 +13,10 @@ class UserModel {
     this.chemistryLevel = 1,
     this.totalPoints = 0,
     this.unlockedLevel = 1,
+    this.classScores = const {},
+    this.surpriseExams = const [],
   });
 
-  /// Convierte el objeto UserModel a un mapa de datos.
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -24,31 +24,47 @@ class UserModel {
       'level': chemistryLevel,
       'points': totalPoints,
       'unlockedLevel': unlockedLevel,
+      'classScores': classScores.map((k, v) => MapEntry(k.toString(), v)),
+      'surpriseExams': surpriseExams,
     };
   }
 
-  /// Crea un objeto UserModel a partir de un mapa.
   factory UserModel.fromJson(Map<String, dynamic> json) {
     try {
+      final rawScores = json['classScores'] as Map<String, dynamic>? ?? {};
+      final Map<int, int> parsedScores = {};
+      rawScores.forEach((key, value) {
+        final k = int.tryParse(key);
+        if (k != null) {
+          parsedScores[k] = (value as num?)?.toInt() ?? 0;
+        }
+      });
+
+      final List<dynamic> rawSurprise =
+          List<dynamic>.from(json['surpriseExams'] ?? []);
+
       return UserModel(
         name: json['name'] as String? ?? "Estudiante Anónimo",
         age: json['age'] as int? ?? 12,
         chemistryLevel: json['level'] as int? ?? 1,
         totalPoints: json['points'] as int? ?? 0,
         unlockedLevel: json['unlockedLevel'] as int? ?? 1,
+        classScores: parsedScores,
+        surpriseExams: rawSurprise,
       );
     } catch (e) {
       return UserModel(name: "Usuario", age: 12);
     }
   }
 
-  /// Permite crear una copia del usuario modificando sólo ciertos campos.
   UserModel copyWith({
     String? name,
     int? age,
     int? chemistryLevel,
     int? totalPoints,
     int? unlockedLevel,
+    Map<int, int>? classScores,
+    List<dynamic>? surpriseExams,
   }) {
     return UserModel(
       name: name ?? this.name,
@@ -56,6 +72,8 @@ class UserModel {
       chemistryLevel: chemistryLevel ?? this.chemistryLevel,
       totalPoints: totalPoints ?? this.totalPoints,
       unlockedLevel: unlockedLevel ?? this.unlockedLevel,
+      classScores: classScores ?? this.classScores,
+      surpriseExams: surpriseExams ?? this.surpriseExams,
     );
   }
 }
