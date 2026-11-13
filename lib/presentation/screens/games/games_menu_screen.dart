@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../services/game_service.dart';
 import '../../../providers/user_provider.dart';
+import '../../../providers/teacher_provider.dart';
 import '../../widgets/qr_scanner_screen.dart';
+import '../teacher/teacher_exam_builder_screen.dart';
 import 'game_level_screen.dart';
 
 class GamesMenuScreen extends StatefulWidget {
@@ -32,6 +34,170 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
       _allClasses = list;
       _loading = false;
     });
+  }
+
+  /// Modal que muestra las Evaluaciones Sorpresa del Docente en el trimestre seleccionado
+  void _showSurpriseEvaluationsHistoryModal(
+    BuildContext context,
+    UserProvider userProv,
+    TeacherProvider teacherProv,
+  ) {
+    final allSurprise = userProv.user?.surpriseExams ?? [];
+    final trimSurprises = allSurprise.where((item) {
+      if (item is Map) {
+        return (item['trimestre'] as num?)?.toInt() == _selectedTrimestre;
+      }
+      return false;
+    }).toList();
+
+    double avgSurprise = 0.0;
+    if (trimSurprises.isNotEmpty) {
+      int sum = 0;
+      for (final s in trimSurprises) {
+        sum += ((s as Map)['score'] as num?)?.toInt() ?? 0;
+      }
+      avgSurprise = sum / trimSurprises.length;
+    }
+
+    final teacherCreatedForTrim = teacherProv.createdExams
+        .where((e) => e.trimestre == _selectedTrimestre)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          "⚡ Evaluaciones Sorpresa ($_selectedTrimestre.º Trim.)",
+          textAlign: TextAlign.center,
+        ),
+        content: SizedBox(
+          width: 310,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.amber.shade700),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        "Promedio en Evaluaciones Sorpresa",
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${avgSurprise.toStringAsFixed(1)} / 100 pts",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber[900],
+                        ),
+                      ),
+                      Text(
+                        "Evaluaciones rendidas: ${trimSurprises.length}",
+                        style: const TextStyle(fontSize: 11.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (trimSurprises.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      "Aún no has rendido evaluaciones sorpresa en este trimestre.\nCuando tu docente proyecte un QR en aula, escanéalo con el botón 'Evaluación Sorpresa'.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  )
+                else
+                  ...trimSurprises.map((item) {
+                    final map = Map<String, dynamic>.from(item as Map);
+                    final int sc = (map['score'] as num?)?.toInt() ?? 0;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          backgroundColor: sc >= 60
+                              ? Colors.green.withValues(alpha: 0.15)
+                              : Colors.orange.withValues(alpha: 0.15),
+                          child: Icon(
+                            Icons.bolt,
+                            color: sc >= 60
+                                ? Colors.green[800]
+                                : Colors.orange[800],
+                          ),
+                        ),
+                        title: Text(
+                          (map['title'] ?? 'Evaluación Sorpresa').toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text("Fecha: ${map['date'] ?? '-'}"),
+                        trailing: Text(
+                          "$sc / 100",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: sc >= 60
+                                ? Colors.green[800]
+                                : Colors.orange[800],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                if (teacherProv.isTeacherMode) ...[
+                  const Divider(height: 22),
+                  Text(
+                    "👨‍🏫 QRs Creados por el Docente (${teacherCreatedForTrim.length}):",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 12.5),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TeacherExamBuilderScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_2),
+                    label: const Text(
+                        "Abrir Mis Evaluaciones Sorpresa (Docente)"),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cerrar"),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showSurpriseExamModal(context, userProv);
+            },
+            icon: const Icon(Icons.qr_code_scanner, size: 18),
+            label: const Text("Escanear Nueva"),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Modal con Código QR para que el Docente lo escanee y registre notas automáticamente
@@ -260,7 +426,6 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
       }
 
       final String examId = decoded['id'] as String;
-      // Verifica si el estudiante ya rindió esta evaluación anteriormente
       final pastAttempt = userProv.findCompletedSurpriseExam(examId);
       if (pastAttempt != null) {
         setModalState(() {
@@ -408,6 +573,7 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
   @override
   Widget build(BuildContext context) {
     final userProv = Provider.of<UserProvider>(context);
+    final teacherProv = Provider.of<TeacherProvider>(context);
     final user = userProv.user;
     final trimestreClasses = _allClasses
         .where((c) => c.trimestre == _selectedTrimestre)
@@ -523,16 +689,46 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
 
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 1, label: Text("1.º Trimestre")),
-                ButtonSegment(value: 2, label: Text("2.º Trimestre")),
-                ButtonSegment(value: 3, label: Text("3.º Trimestre")),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SegmentedButton<int>(
+                  segments: const [
+                    ButtonSegment(value: 1, label: Text("1.º Trimestre")),
+                    ButtonSegment(value: 2, label: Text("2.º Trimestre")),
+                    ButtonSegment(value: 3, label: Text("3.º Trimestre")),
+                  ],
+                  selected: {_selectedTrimestre},
+                  onSelectionChanged: (sel) {
+                    setState(() => _selectedTrimestre = sel.first);
+                  },
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.indigo[900],
+                    backgroundColor: Colors.amber.withValues(alpha: 0.12),
+                    side: BorderSide(color: Colors.amber.shade700, width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () => _showSurpriseEvaluationsHistoryModal(
+                    context,
+                    userProv,
+                    teacherProv,
+                  ),
+                  icon: Icon(Icons.bolt, color: Colors.amber[900], size: 20),
+                  label: Text(
+                    "Evaluaciones Sorpresa del Docente ($_selectedTrimestre.º Trimestre)",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               ],
-              selected: {_selectedTrimestre},
-              onSelectionChanged: (sel) {
-                setState(() => _selectedTrimestre = sel.first);
-              },
             ),
           ),
 
@@ -560,7 +756,6 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
   ) {
     final user = userProv.user;
     final int unlocked = user?.unlockedLevel ?? 1;
-    // PROGRESIÓN ESTRICTAMENTE SECUENCIAL: Solo se desbloquea si su número de clase <= unlockedLevel
     final bool isUnlocked = unlocked >= cls.numeroClase;
     final int? savedGrade = user?.classScores[cls.numeroClase];
 
@@ -620,8 +815,9 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color:
-                        savedGrade >= 60 ? Colors.green[800] : Colors.orange[800],
+                    color: savedGrade >= 60
+                        ? Colors.green[800]
+                        : Colors.orange[800],
                   ),
                 ),
               )
@@ -644,8 +840,8 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content:
-                            Text("Error al cargar las 10 preguntas de la clase")),
+                        content: Text(
+                            "Error al cargar las 10 preguntas de la clase")),
                   );
                   return;
                 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
+import 'providers/teacher_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/theme_provider.dart';
 import 'presentation/screens/auth/onboarding_screen.dart';
@@ -21,6 +22,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
         // Registramos el ThemeProvider
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        // Registramos el Usuario TeacherProvider y careamos sus datos
+        ChangeNotifierProvider(create: (_) => TeacherProvider()..loadTeacherData()),
       ],
       child: const MyApp(),
     ),
