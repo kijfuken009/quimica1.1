@@ -38,6 +38,13 @@ class UserProvider with ChangeNotifier {
     await _persist();
   }
 
+  /// Verifica si una clase ya fue aprobada (>= 60 pts) para bloquear nuevos intentos
+  bool isClassAlreadyPassed(int classNumber) {
+    if (_user == null) return false;
+    final int? grade = _user!.classScores[classNumber];
+    return grade != null && grade >= 60;
+  }
+
   /// Verifica si una evaluación sorpresa (por examId) ya fue rendida por el estudiante
   Map<String, dynamic>? findCompletedSurpriseExam(String examId) {
     if (_user == null || examId.trim().isEmpty) return null;
@@ -47,6 +54,23 @@ class UserProvider with ChangeNotifier {
       }
     }
     return null;
+  }
+
+  /// Recalcula los puntos globales reales sin acumular intentos repetidos
+  int _recalculateExactTotalPoints(
+    Map<int, int> scores,
+    List<dynamic> surprises,
+  ) {
+    int total = 0;
+    for (final val in scores.values) {
+      total += val;
+    }
+    for (final item in surprises) {
+      if (item is Map) {
+        total += (item['score'] as num?)?.toInt() ?? 0;
+      }
+    }
+    return total;
   }
 
   Future<void> addPointsAndUnlockLevel({
@@ -64,15 +88,14 @@ class UserProvider with ChangeNotifier {
     final int calculatedGrade = scoreOn100 ?? pointsWon;
 
     if (isSurpriseExam) {
+      // Si ya rindió este examen sorpresa antes, no lo duplica ni altera su nota
+      if (surpriseExamId.isNotEmpty &&
+          findCompletedSurpriseExam(surpriseExamId) != null) {
+        return;
+      }
+
       final List<dynamic> updatedSurprise =
           List<dynamic>.from(_user!.surpriseExams);
-
-      // Evita duplicar si el examId ya existe
-      if (surpriseExamId.isNotEmpty) {
-        updatedSurprise.removeWhere(
-          (e) => e is Map && e['id']?.toString() == surpriseExamId,
-        );
-      }
 
       updatedSurprise.insert(0, {
         'id': surpriseExamId.isEmpty
@@ -84,31 +107,43 @@ class UserProvider with ChangeNotifier {
         'date': DateTime.now().toIso8601String().split('T').first,
       });
 
+      final int exactPoints =
+          _recalculateExactTotalPoints(_user!.classScores, updatedSurprise);
+
       _user = _user!.copyWith(
-        totalPoints: _user!.totalPoints + pointsWon,
+        totalPoints: exactPoints,
         surpriseExams: updatedSurprise,
       );
       await _persist();
       return;
     }
 
-    int newUnlockedLevel = _user!.unlockedLevel;
-    // Desbloqueo estrictamente secuencial de la Clase 1 a la 36
-    if (passed && _user!.unlockedLevel == completedLevel && completedLevel < 36) {
-      newUnlockedLevel = completedLevel + 1;
+    // Si la clase ya estaba aprobada (>= 60), queda bloqueada y no modifica la nota
+    final int? existingGrade = _user!.classScores[completedLevel];
+    if (existingGrade != null && existingGrade >= 60) {
+      return;
     }
 
     final Map<int, int> updatedScores = Map<int, int>.from(_user!.classScores);
-    final int prevBest = updatedScores[completedLevel] ?? 0;
-    if (calculatedGrade >= prevBest) {
-      updatedScores[completedLevel] = calculatedGrade;
+    // Registra la nota del intento actual (solo llega aquí si no había aprobado antes)
+    updatedScores[completedLevel] = calculatedGrade;
+
+    int newUnlockedLevel = _user!.unlockedLevel;
+    // Desbloqueo estrictamente secuencial de la Clase 1 a la 36 al aprobar
+    if (passed &&
+        _user!.unlockedLevel == completedLevel &&
+        completedLevel < 36) {
+      newUnlockedLevel = completedLevel + 1;
     }
 
     final int newChemLevel =
         newUnlockedLevel > 24 ? 3 : (newUnlockedLevel > 12 ? 2 : 1);
 
+    final int exactPoints =
+        _recalculateExactTotalPoints(updatedScores, _user!.surpriseExams);
+
     _user = _user!.copyWith(
-      totalPoints: _user!.totalPoints + pointsWon,
+      totalPoints: exactPoints,
       unlockedLevel: newUnlockedLevel,
       chemistryLevel: newChemLevel,
       classScores: updatedScores,
@@ -117,6 +152,7 @@ class UserProvider with ChangeNotifier {
     await _persist();
   }
 
+  /// PROMEDIO TRIMESTRAL EXCLUSIVO DE CLASES DESBLOQUEABLES (Sin mezclar Evaluaciones Sorpresa)
   double getTrimestreAverage(int trimestre) {
     if (_user == null) return 0.0;
     final int startClass = (trimestre - 1) * 12 + 1;
@@ -131,13 +167,21 @@ class UserProvider with ChangeNotifier {
       }
     }
 
+    if (count == 0) return 0.0;
+    return sum / count;
+  }
+
+  /// PROMEDIO INDEPENDIENTE DE EVALUACIONES SORPRESA (Para Puntos Extra del Docente)
+  double getSurpriseTrimestreAverage(int trimestre) {
+    if (_user == null) return 0.0;
+    int sum = 0;
+    int count = 0;
     for (final item in _user!.surpriseExams) {
       if (item is Map && (item['trimestre'] as num?)?.toInt() == trimestre) {
         sum += (item['score'] as num?)?.toInt() ?? 0;
         count++;
       }
     }
-
     if (count == 0) return 0.0;
     return sum / count;
   }
@@ -153,8 +197,7 @@ class UserProvider with ChangeNotifier {
     return count;
   }
 
-  /// GENERA EL QR COMPACTO UNIFICADO (Sirve para que el Docente escanee y registre
-  /// al alumno automáticamente, y sirve como QR de Respaldo/Recuperación)
+  /// GENERA EL QR COMPACTO UNIFICADO (Envía promedios de clases y de sorpresas por separado)
   String generateStudentQrPayload() {
     final u = _user;
     if (u == null) return '';
@@ -163,7 +206,7 @@ class UserProvider with ChangeNotifier {
       'n': u.name,
       'a': u.age,
       'l': u.chemistryLevel,
-      'p': u.totalPoints,
+      'p': _recalculateExactTotalPoints(u.classScores, u.surpriseExams),
       'u': u.unlockedLevel,
       'cs': u.classScores.map((k, v) => MapEntry(k.toString(), v)),
       'se': u.surpriseExams,

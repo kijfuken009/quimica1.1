@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../providers/user_provider.dart';
 import '../../../providers/teacher_provider.dart';
 import '../home/home_screen.dart';
+import '../../widgets/qr_scanner_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -142,6 +143,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             color: Colors.indigo,
                           ),
                         ),
+                        const Divider(height: 22),
+                  const Text(
+                    "¿Reinstalaste la aplicación? Importa desde tu Galería o escanea la captura de tu QR Maestro Docente:",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11.5),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final scanned = await Navigator.push<String>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QrScannerScreen(
+                            title: 'Recuperar Cuenta Docente',
+                            subtitle:
+                                'Escanea tu QR Maestro o pulsa abajo para importarlo desde tu Galería',
+                            expectedPrefix: 'CHEMIA-TEACHER-QR:',
+                          ),
+                        ),
+                      );
+                      if (!ctx.mounted || scanned == null || scanned.isEmpty) {
+                        return;
+                      }
+                      final teacherProv =
+                          Provider.of<TeacherProvider>(context, listen: false);
+                      final userProv =
+                          Provider.of<UserProvider>(context, listen: false);
+
+                      final ok =
+                          await teacherProv.restoreTeacherFromMasterQr(scanned);
+                      if (!ctx.mounted) return;
+                      if (ok) {
+                        await userProv.saveUser(
+                          "Prof. ${teacherProv.teacherName}",
+                          30,
+                        );
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.green[700],
+                            content: Text(
+                              "🎉 ¡Bienvenido Prof. ${teacherProv.teacherName}! Pizarra y evaluaciones restauradas.",
+                            ),
+                          ),
+                        );
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text("Escanear / Importar QR de Galería"),
+                  ),
                         const SizedBox(height: 4),
                         const Text(
                           "Para confirmar que eres docente en aula: ¿Cuál es la masa molar aproximada del Agua (H₂O) en g/mol?",

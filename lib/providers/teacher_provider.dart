@@ -76,25 +76,9 @@ class TeacherStudentRecord {
     return count;
   }
 
-  /// Promedio Final Evaluativo y Comparativo del Trimestre (Clases + Sorpresas)
+  /// Promedio Oficial del Trimestre basado exclusivamente en las Clases Evaluadas (1 a 12)
   double getFinalTrimestreAverage(int trimestre) {
-    final int start = (trimestre - 1) * 12 + 1;
-    final int end = trimestre * 12;
-    int sum = 0;
-    int count = 0;
-    for (int c = start; c <= end; c++) {
-      if (classScores.containsKey(c)) {
-        sum += classScores[c]!;
-        count++;
-      }
-    }
-    for (final item in surpriseExams) {
-      if (item is Map && (item['trimestre'] as num?)?.toInt() == trimestre) {
-        sum += (item['score'] as num?)?.toInt() ?? 0;
-        count++;
-      }
-    }
-    return count == 0 ? 0.0 : sum / count;
+    return getRegularClassAverage(trimestre);
   }
 
   /// Genera el QR de Recuperación para que el estudiante restaure su progreso desde la pizarra del docente
@@ -429,6 +413,51 @@ class TeacherProvider with ChangeNotifier {
       return savedRecord;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Genera el QR Maestro del Docente (contiene perfil Gmail, pizarra de alumnos y evaluaciones)
+  String generateTeacherMasterQrPayload() {
+    final compactMap = {
+      'tn': _teacherName,
+      'te': _teacherGoogleEmail,
+      'st': _students.map((s) => s.toJson()).toList(),
+      'ex': _createdExams.map((e) => e.toJson()).toList(),
+    };
+    final encoded = base64UrlEncode(utf8.encode(jsonEncode(compactMap)));
+    return 'CHEMIA-TEACHER-QR:$encoded';
+  }
+
+  /// Restaura toda la cuenta del docente, su pizarra de alumnos y sus QRs desde su QR Maestro
+  Future<bool> restoreTeacherFromMasterQr(String rawQr) async {
+    try {
+      String clean = rawQr.trim();
+      if (!clean.startsWith('CHEMIA-TEACHER-QR:')) return false;
+      clean = clean.replaceFirst('CHEMIA-TEACHER-QR:', '').trim();
+
+      final decodedStr = utf8.decode(base64Url.decode(clean));
+      final Map<String, dynamic> map = jsonDecode(decodedStr);
+
+      _teacherName = (map['tn'] ?? 'Docente').toString();
+      _teacherGoogleEmail = (map['te'] ?? '').toString();
+      _isTeacherMode = true;
+
+      final rawStudents = List<dynamic>.from(map['st'] ?? []);
+      _students = rawStudents
+          .map((e) => TeacherStudentRecord.fromJson(
+              Map<String, dynamic>.from(e as Map)))
+          .toList();
+
+      final rawExams = List<dynamic>.from(map['ex'] ?? []);
+      _createdExams = rawExams
+          .map((e) => CreatedSurpriseExam.fromJson(
+              Map<String, dynamic>.from(e as Map)))
+          .toList();
+
+      await _persist();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

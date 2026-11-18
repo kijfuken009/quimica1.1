@@ -7,6 +7,7 @@ import '../../../providers/teacher_provider.dart';
 import '../../widgets/qr_scanner_screen.dart';
 import '../teacher/teacher_exam_builder_screen.dart';
 import 'game_level_screen.dart';
+import '../teacher/teacher_roster_screen.dart';
 
 class GamesMenuScreen extends StatefulWidget {
   const GamesMenuScreen({super.key});
@@ -68,7 +69,7 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          "⚡ Evaluaciones Sorpresa ($_selectedTrimestre.º Trim.)",
+          "⚡ Evaluaciones Sorpresa (${userProv.getSurpriseTrimestreAverage(_selectedTrimestre).toStringAsFixed(0)}/100 pts • Puntos Extra)",
           textAlign: TextAlign.center,
         ),
         content: SizedBox(
@@ -194,6 +195,142 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
             },
             icon: const Icon(Icons.qr_code_scanner, size: 18),
             label: const Text("Escanear Nueva"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Modal exclusivo para el DOCENTE (Genera su QR Maestro para guardar en galería/Gmail y permite importarlo)
+  void _showTeacherBackupQrModal(
+    BuildContext context,
+    TeacherProvider teacherProv,
+  ) {
+    final masterQr = teacherProv.generateTeacherMasterQrPayload();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "☁️ Respaldo Maestro del Docente",
+          textAlign: TextAlign.center,
+        ),
+        content: SizedBox(
+          width: 310,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "Prof. ${teacherProv.teacherName}",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13.5),
+                      ),
+                      Text(
+                        teacherProv.teacherGoogleEmail,
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.indigo),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Alumnos registrados: ${teacherProv.students.length} • Evaluaciones: ${teacherProv.createdExams.length}",
+                        style: const TextStyle(fontSize: 11.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "1. Tu QR Maestro para Galería / Gmail:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Toma una captura de pantalla de este código QR. Se guardará en tu galería (y puedes subirla a tu Gmail) con toda tu pizarra de alumnos y evaluaciones:",
+                  style: TextStyle(fontSize: 11.5),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: 196,
+                    height: 196,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.indigo, width: 1.5),
+                    ),
+                    child: QrImageView(
+                      data: masterQr,
+                      version: QrVersions.auto,
+                      size: 176,
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const Divider(height: 24),
+                const Text(
+                  "2. Restaurar desde Cámara o Galería:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Si reinstalaste la app, pulsa abajo para escanear o importar desde tu Galería la captura de tu QR Maestro:",
+                  style: TextStyle(fontSize: 11.5),
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  onPressed: () async {
+                    final scanned = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QrScannerScreen(
+                          title: 'Restaurar Respaldo Docente',
+                          subtitle:
+                              'Escanea tu QR Maestro o impórtalo desde tu Galería con el botón inferior',
+                          expectedPrefix: 'CHEMIA-TEACHER-QR:',
+                        ),
+                      ),
+                    );
+                    if (!ctx.mounted || scanned == null || scanned.isEmpty) {
+                      return;
+                    }
+                    final ok =
+                        await teacherProv.restoreTeacherFromMasterQr(scanned);
+                    if (!ctx.mounted) return;
+                    if (ok) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Colors.green,
+                          content: Text(
+                            "🎉 ¡Pizarra de alumnos y evaluaciones restauradas con éxito!",
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text("Escanear o Importar de Galería"),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cerrar"),
           ),
         ],
       ),
@@ -662,26 +799,60 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
-                  children: [
-                    FilledButton.tonalIcon(
-                      onPressed: () =>
-                          _showSurpriseExamModal(context, userProv),
-                      icon: const Icon(Icons.bolt, size: 18),
-                      label: const Text("Evaluación Sorpresa"),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: () =>
-                          _showShareGradesQrModal(context, userProv),
-                      icon: const Icon(Icons.qr_code_2, size: 18),
-                      label: const Text("QR para Docente"),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () =>
-                          _showBackupRestoreModal(context, userProv),
-                      icon: const Icon(Icons.restore, size: 17),
-                      label: const Text("Respaldo QR"),
-                    ),
-                  ],
+                  children: teacherProv.isTeacherMode
+                      ? [
+                          FilledButton.tonalIcon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const TeacherExamBuilderScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.bolt, size: 18),
+                            label: const Text("Crear Eval. Sorpresa"),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TeacherRosterScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.assignment_ind, size: 18),
+                            label: const Text("Pizarra Alumnos"),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () => _showTeacherBackupQrModal(
+                                context, teacherProv),
+                            icon: const Icon(Icons.cloud_sync, size: 17),
+                            label: const Text("Respaldo Docente QR"),
+                          ),
+                        ]
+                      : [
+                          FilledButton.tonalIcon(
+                            onPressed: () =>
+                                _showSurpriseExamModal(context, userProv),
+                            icon: const Icon(Icons.bolt, size: 18),
+                            label: const Text("Evaluación Sorpresa"),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: () =>
+                                _showShareGradesQrModal(context, userProv),
+                            icon: const Icon(Icons.qr_code_2, size: 18),
+                            label: const Text("QR para Docente"),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                _showBackupRestoreModal(context, userProv),
+                            icon: const Icon(Icons.restore, size: 17),
+                            label: const Text("Respaldo QR"),
+                          ),
+                        ],
                 ),
               ],
             ),
@@ -758,6 +929,7 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
     final int unlocked = user?.unlockedLevel ?? 1;
     final bool isUnlocked = unlocked >= cls.numeroClase;
     final int? savedGrade = user?.classScores[cls.numeroClase];
+    final bool isPassed = savedGrade != null && savedGrade >= 60;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -766,19 +938,23 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: CircleAvatar(
-          backgroundColor: savedGrade != null
+          backgroundColor: isPassed
               ? Colors.green.withValues(alpha: 0.18)
-              : (isUnlocked
-                  ? Colors.indigo.withValues(alpha: 0.15)
-                  : Colors.grey[300]),
+              : (savedGrade != null
+                  ? Colors.orange.withValues(alpha: 0.18)
+                  : (isUnlocked
+                      ? Colors.indigo.withValues(alpha: 0.15)
+                      : Colors.grey[300])),
           child: Text(
             "C${cls.numeroClase}",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
-              color: savedGrade != null
+              color: isPassed
                   ? Colors.green[800]
-                  : (isUnlocked ? Colors.indigo : Colors.grey[600]),
+                  : (savedGrade != null
+                      ? Colors.orange[800]
+                      : (isUnlocked ? Colors.indigo : Colors.grey[600])),
             ),
           ),
         ),
@@ -793,8 +969,18 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-            "${cls.temaCurricular} • ${cls.ecuacion}\n10 preguntas • 30s por pregunta",
-            style: const TextStyle(fontSize: 12),
+            isPassed
+                ? "${cls.temaCurricular} • Evaluación Aprobada y Cerrada ✓"
+                : savedGrade != null
+                    ? "${cls.temaCurricular} • Nota menor a 60 (Toca para nivelarte)"
+                    : "${cls.temaCurricular} • ${cls.ecuacion}\n10 preguntas • 30s por pregunta",
+            style: TextStyle(
+              fontSize: 12,
+              color: isPassed
+                  ? Colors.green[800]
+                  : (savedGrade != null ? Colors.orange[900] : null),
+              fontWeight: savedGrade != null ? FontWeight.w600 : null,
+            ),
           ),
         ),
         trailing: Column(
@@ -803,22 +989,32 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
             if (savedGrade != null)
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: savedGrade >= 60
+                  color: isPassed
                       ? Colors.green.withValues(alpha: 0.15)
                       : Colors.orange.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  "$savedGrade/100",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: savedGrade >= 60
-                        ? Colors.green[800]
-                        : Colors.orange[800],
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPassed ? Icons.verified : Icons.refresh,
+                      size: 14,
+                      color: isPassed ? Colors.green[800] : Colors.orange[800],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "$savedGrade/100",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color:
+                            isPassed ? Colors.green[800] : Colors.orange[800],
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -831,6 +1027,19 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
         ),
         onTap: isUnlocked
             ? () async {
+                // Si el estudiante ya aprobó (>= 60), bloquea nuevos intentos y muestra su nota oficial
+                if (isPassed) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.green[800],
+                      content: Text(
+                        "✅ Ya aprobaste la Clase ${cls.numeroClase} con $savedGrade/100 pts. Tu calificación oficial ya está registrada.",
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
                 final questions = await _gameService.loadRandomQuestions(
                   cls.numeroClase,
                   limit: 10,
@@ -840,8 +1049,9 @@ class _GamesMenuScreenState extends State<GamesMenuScreen> {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text(
-                            "Error al cargar las 10 preguntas de la clase")),
+                      content:
+                          Text("Error al cargar las 10 preguntas de la clase"),
+                    ),
                   );
                   return;
                 }

@@ -251,94 +251,99 @@ class _TeacherRosterScreenState extends State<TeacherRosterScreen> {
     BuildContext context,
     TeacherProvider teacherProv,
   ) {
-    final nameCtrl = TextEditingController(text: teacherProv.teacherName);
-    final emailCtrl =
-        TextEditingController(text: teacherProv.teacherGoogleEmail);
-    String? statusMsg;
+    final masterQr = teacherProv.generateTeacherMasterQrPayload();
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text(
-            '☁️ Sincronización con Cuenta Google',
-            textAlign: TextAlign.center,
-          ),
-          content: SizedBox(
-            width: 310,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Tu pizarra de alumnos, calificaciones, promedios comparativos y QRs de evaluaciones sorpresa están vinculados a tu correo de Gmail:',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Nombre del Docente',
-                      prefixIcon: const Icon(Icons.person_outline),
-                      isDense: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Correo Gmail Vinculado',
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      isDense: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  FilledButton.icon(
-                    onPressed: () async {
-                      await teacherProv.registerOrSyncWithGmail(
-                        name: nameCtrl.text,
-                        googleEmail: emailCtrl.text,
-                      );
-                      setModalState(() {
-                        statusMsg =
-                            '☁️ Pizarra de alumnos (${teacherProv.students.length}) y QRs (${teacherProv.createdExams.length}) sincronizados con ${emailCtrl.text.trim()}.';
-                      });
-                    },
-                    icon: const Icon(Icons.cloud_done_outlined),
-                    label: const Text('Sincronizar Ahora con mi Gmail'),
-                  ),
-                  if (statusMsg != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      statusMsg!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[800],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cerrar'),
-            ),
-          ],
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          '☁️ Respaldo Maestro del Docente',
+          textAlign: TextAlign.center,
         ),
+        content: SizedBox(
+          width: 310,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Prof. ${teacherProv.teacherName} (${teacherProv.teacherGoogleEmail})',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Toma una captura de pantalla de este código QR para guardarlo en tu Galería o enviarlo a tu Gmail. Contiene toda tu pizarra de alumnos y evaluaciones sorpresa:',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11.5),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    width: 196,
+                    height: 196,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.indigo, width: 1.5),
+                    ),
+                    child: QrImageView(
+                      data: masterQr,
+                      version: QrVersions.auto,
+                      size: 176,
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const Divider(height: 24),
+                FilledButton.icon(
+                  onPressed: () async {
+                    final scanned = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QrScannerScreen(
+                          title: 'Restaurar Pizarra Docente',
+                          subtitle:
+                              'Escanea tu QR Maestro o impórtalo desde tu Galería',
+                          expectedPrefix: 'CHEMIA-TEACHER-QR:',
+                        ),
+                      ),
+                    );
+                    if (!ctx.mounted || scanned == null || scanned.isEmpty) {
+                      return;
+                    }
+                    final ok =
+                        await teacherProv.restoreTeacherFromMasterQr(scanned);
+                    if (!ctx.mounted) return;
+                    if (ok) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Colors.green,
+                          content: Text(
+                            '🎉 Pizarra de alumnos y evaluaciones restauradas con éxito.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Importar QR Maestro desde Galería'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar'),
+          ),
+        ],
       ),
     );
   }
